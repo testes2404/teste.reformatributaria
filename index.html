@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reforma Tributária — Aluguel | Simulador de Holding</title>
+  <meta name="color-scheme" content="dark" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { --gold:#D4AF37; --gold-soft:rgba(212,175,55,.25) }
+    html, body { height: 100% }
+    body{
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 700px at 70% -20%, rgba(212,175,55,.12), transparent 60%),
+                  radial-gradient(900px 600px at 10% 110%, rgba(212,175,55,.10), transparent 60%), #0c0c0f;
+      color:#f4f4f5; min-height:100vh;
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(12px);
+      border-radius:18px;
+      box-shadow:0 10px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .divider{height:1px;width:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent)}
+    .btn{
+      border:1px solid var(--gold);
+      background:linear-gradient(90deg, rgba(212,175,55,.18), rgba(212,175,55,.05));
+      color:#fff; font-weight:600; padding:.9rem 1.2rem; border-radius:12px; transition:.2s
+    }
+    .btn:hover{ background:linear-gradient(90deg, rgba(212,175,55,.25), rgba(212,175,55,.10)); box-shadow:0 6px 20px rgba(212,175,55,.25) }
+    .field{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:12px; color:#fff; padding:.85rem 1rem; outline:none;
+    }
+    .field:disabled{ opacity:.75 }
+    .field::placeholder{ color:#bfbfbf }
+    .field:focus{ border-color:var(--gold); box-shadow:0 0 0 4px var(--gold-soft) }
+    .fade-out{ animation: fadeOut .45s ease forwards }
+    @keyframes fadeOut{ to { opacity:0; transform:translateY(-8px) scale(.98); height:0; margin:0; padding:0 } }
+    .bar-outer{height:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;overflow:hidden}
+    .bar-inner{height:100%;width:0%;background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e);transition:width .6s cubic-bezier(.22,.92,.19,1)}
+    .subtle{ color:#d6d6d7 } .link{ color:var(--gold); text-decoration:underline; text-underline-offset:2px }
+    .pill{ border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:.25rem .6rem; font-size:.76rem; opacity:.9}
+    /* Modal */
+    .modal-bg{ background: rgba(0,0,0,.55) }
+  </style>
+</head>
+<body>
+  <main class="max-w-7xl mx-auto px-5 py-8 md:py-12">
+    <div class="grid md:grid-cols-2 gap-8 items-stretch">
+      <!-- ESQUERDA: IMAGEM -->
+      <section class="card p-8 md:p-12 flex items-center justify-center min-h-[640px]">
+        <img src="./recursos/auvp.png" alt="AUVP Wealth"
+             class="max-w-full max-h-[560px] w-auto h-auto object-contain rounded-[14px] shadow-2xl" />
+      </section>
+
+      <!-- DIREITA: CONTEÚDO -->
+      <div class="flex flex-col justify-center min-h-[640px]">
+        <!-- CADASTRO -->
+        <section id="cadastroCard" class="card p-6 md:p-8">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h1 class="text-2xl md:text-3xl font-bold">Comece pela sua identificação</h1>
+              <p class="subtle mt-1">Preencha seus dados para liberar a simulação de viabilidade tributária.</p>
+            </div>
+            <div class="hidden md:block text-right">
+              <div class="text-xs uppercase tracking-widest text-zinc-400">Etapa 1 de 2</div>
+              <div class="font-semibold">Cadastro</div>
+            </div>
+          </div>
+
+          <form id="cadastroForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">Nome completo</label>
+              <input id="nome" class="field w-full" type="text" placeholder="Ex.: Maria Andrade" required>
+            </div>
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">Telefone</label>
+              <input id="telefone" class="field w-full" type="tel" inputmode="tel" placeholder="(11) 98888-7777" required>
+            </div>
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">CPF</label>
+              <input id="cpf" class="field w-full" type="text" inputmode="numeric" placeholder="000.000.000-00" required>
+            </div>
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">Endereço</label>
+              <input id="endereco" class="field w-full" type="text" placeholder="Rua, número, bairro, cidade/UF" required>
+            </div>
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">E-mail</label>
+              <input id="email" class="field w-full" type="email" placeholder="seu@email.com" required>
+            </div>
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">Modalidade</label>
+              <div class="flex items-center gap-4 h-[48px]">
+                <label class="flex items-center gap-2"><input type="radio" name="modalidade" value="PF" checked><span>Pessoa Física</span></label>
+                <label class="flex items-center gap-2"><input type="radio" name="modalidade" value="PJ"><span>Pessoa Jurídica (Holding)</span></label>
+              </div>
+            </div>
+
+            <div class="md:col-span-2 -mt-2">
+              <label class="flex items-start gap-3">
+                <input id="aceite" type="checkbox" class="mt-1.5">
+                <span class="text-sm text-zinc-300">
+                  Li e concordo com os <a class="link" href="#" target="_blank" rel="noopener">Termos e Condições</a>
+                  e autorizo o contato para apresentação da solução de PJtização.
+                </span>
+              </label>
+            </div>
+
+            <div class="md:col-span-2 mt-2 flex flex-wrap items-center gap-3">
+              <button id="btnCadastrar" type="submit" class="btn flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Avançar para Simulação
+              </button>
+              <span id="statusCadastro" class="text-sm text-zinc-400"></span>
+            </div>
+          </form>
+        </section>
+
+        <div class="h-6"></div>
+
+        <!-- CALCULADORA -->
+        <section id="calcCard" class="card p-6 md:p-8 hidden">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-2xl md:text-3xl font-bold">Simulação de Viabilidade</h2>
+              <p class="subtle mt-1">As alíquotas da Reforma 2025 são aplicadas automaticamente por faixa de renda e valor do imóvel.</p>
+            </div>
+            <div class="hidden md:block text-right">
+              <div class="text-xs uppercase tracking-widest text-zinc-400">Etapa 2 de 2</div>
+              <div class="font-semibold">Cálculo</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Base para cálculo automático -->
+            <div class="md:col-span-1">
+              <label class="block mb-2 text-sm text-zinc-300">Receita mensal de aluguéis (R$)</label>
+              <input id="receita" class="field w-full" type="number" inputmode="decimal" placeholder="Ex.: 12000" min="0">
+            </div>
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">Valor estimado do imóvel (R$)</label>
+              <input id="valor_imovel" class="field w-full" type="number" inputmode="decimal" placeholder="Ex.: 800000" min="0">
+            </div>
+
+            <!-- Alíquotas (auto) -->
+            <div class="md:col-span-3">
+              <div class="flex items-center gap-3">
+                <span class="pill">Regras automáticas da Reforma 2025</span>
+                <label class="flex items-center gap-2 text-sm text-zinc-300">
+                  <input id="toggleManual" type="checkbox">
+                  <span>Editar alíquotas manualmente</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">IR PF (%)</label>
+              <input id="ir_pf" class="field w-full" type="number" step="0.01" placeholder="Auto" disabled>
+            </div>
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">IBS / CBS (%)</label>
+              <input id="ibs_cbs" class="field w-full" type="number" step="0.01" placeholder="Auto" disabled>
+            </div>
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">Tributos PJ totais (%)</label>
+              <input id="pj_aliq_total" class="field w-full" type="number" step="0.01" placeholder="Auto" disabled>
+            </div>
+
+            <!-- Descontos (visível); custos (OCULTOS) -->
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">Descontos / despesas (%)</label>
+              <input id="descontos_pct" class="field w-full" type="number" inputmode="decimal" placeholder="Ex.: 10" min="0" max="90" value="0">
+            </div>
+
+            <!-- Custos ocultos: guardam valores finais, alimentados pelo modal -->
+            <input id="honorarios"        type="hidden" value="12000" />
+            <input id="manutencao_anual"  type="hidden" value="3000" />
+            <input id="custo_implantacao" type="hidden" value="3000" />
+            <input id="outras_pj"         type="hidden" value="0" />
+          </div>
+
+          <div class="divider my-6"></div>
+
+          <!-- BOTÃO DE CUSTOS + CÁLCULO -->
+          <div class="flex items-center gap-3 flex-wrap">
+            <button id="btnCustos" type="button" class="btn flex items-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 1v22M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              Custos ( <span id="lblTotalCustos">R$ 15.000,00</span> )
+            </button>
+
+            <button id="btnCalcular" class="btn flex items-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 12h18M12 3v18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Calcular viabilidade
+            </button>
+            <span id="statusCalc" class="text-sm text-zinc-400"></span>
+          </div>
+
+          <!-- RESULTADOS -->
+          <div id="resultadoBox" class="mt-8 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div class="card p-5"><div class="text-sm text-zinc-400">Resultado PF (líquido mensal)</div><div id="pf_liquido" class="text-2xl font-bold mt-1">R$ 0,00</div></div>
+              <div class="card p-5"><div class="text-sm text-zinc-400">Resultado PJ (líquido mensal)</div><div id="pj_liquido" class="text-2xl font-bold mt-1">R$ 0,00</div></div>
+              <div class="card p-5"><div class="text-sm text-zinc-400">Economia mensal estimada</div><div id="economia_mensal" class="text-2xl font-bold mt-1 text-green-400">R$ 0,00</div></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+              <div class="card p-5">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-sm text-zinc-400">Viabilidade da Holding</div>
+                  <div id="score_label" class="text-sm font-semibold">0%</div>
+                </div>
+                <div class="bar-outer"><div id="score_bar" class="bar-inner"></div></div>
+                <div id="recomendacao" class="mt-3 text-sm text-zinc-300"></div>
+              </div>
+              <div class="card p-5">
+                <div class="text-sm text-zinc-400">Payback</div>
+                <div id="payback" class="text-2xl font-bold mt-1">—</div>
+                <ul class="mt-3 text-sm list-disc pl-5 leading-relaxed">
+                  <li>Custo de implantação: <span id="custo_implant_res" class="text-zinc-200">R$ 0,00</span></li>
+                  <li>Manutenção anual: <span id="manut_res" class="text-zinc-200">R$ 0,00</span></li>
+                  <li>Economia anual: <span id="eco_anual" class="text-zinc-200">R$ 0,00</span></li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 mt-6">
+              <a id="ctaContato" href="#" class="btn">Falar com um especialista</a>
+              <span class="subtle text-sm">Otimizamos o plano de migração e execução da holding com seus números reais.</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL DE CUSTOS -->
+  <div id="custosModal" class="fixed inset-0 hidden items-center justify-center modal-bg z-50">
+    <div class="card w-[min(720px,95vw)] p-6 md:p-8 relative">
+      <button id="closeModal" class="absolute right-4 top-4 text-zinc-300 hover:text-white">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <h3 class="text-xl md:text-2xl font-bold mb-1">Detalhamento de Custos</h3>
+      <p class="subtle text-sm mb-6">Edite se necessário. Usaremos o <b>total</b> no cálculo.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block mb-2 text-sm text-zinc-300">Honorários contábeis/jurídicos (R$/mês)</label>
+          <input id="c_honorarios" class="field w-full" type="number" min="0" value="12000">
+        </div>
+        <div>
+          <label class="block mb-2 text-sm text-zinc-300">Custo de manutenção anual (R$)</label>
+          <input id="c_manutencao" class="field w-full" type="number" min="0" value="3000">
+        </div>
+        <div>
+          <label class="block mb-2 text-sm text-zinc-300">Custo de implantação (R$)</label>
+          <input id="c_implantacao" class="field w-full" type="number" min="0" value="3000">
+        </div>
+        <div>
+          <label class="block mb-2 text-sm text-zinc-300">Outras despesas mensais PJ (R$)</label>
+          <input id="c_outras" class="field w-full" type="number" min="0" value="0">
+        </div>
+      </div>
+
+      <div class="divider my-6"></div>
+
+      <div class="flex items-center justify-between">
+        <div class="text-lg">Total de custos: <span id="c_total" class="font-bold">R$ 15.000,00</span></div>
+        <div class="flex items-center gap-3">
+          <button id="salvarCustos" class="btn">Salvar custos</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPABASE + LÓGICA -->
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+    import { calcularViabilidade, derivarAliquotas } from "./parametros/calculadora.js";
+
+    // ⛳ Substitua pela sua anon key real
+    const SUPABASE_URL = "https://zkslobheylsaifqcoiva.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inprc2xvYmhleWxzYWlmcWNvaXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1ODA0ODAsImV4cCI6MjA3NzE1NjQ4MH0.rENidnRveawa23yvCfXOtUv9WkvBW0bLws-o1UzSGFs";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const $  = (id)=>document.getElementById(id);
+    const fmtBRL = (v)=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+
+    // ----- estado de custos (ocultos no formulário) -----
+    const DEFAULT_COSTS = {
+      honorariosMensais: 12000,
+      manutencaoAnual : 3000,
+      custoImplantacao: 3000,
+      outrasMensais   : 0
+    };
+    let custos = JSON.parse(localStorage.getItem("custosHolding")||"null") || { ...DEFAULT_COSTS };
+
+    function syncHiddenInputsFromState(){
+      $("honorarios").value        = String(custos.honorariosMensais || 0);
+      $("manutencao_anual").value  = String(custos.manutencaoAnual  || 0);
+      $("custo_implantacao").value = String(custos.custoImplantacao || 0);
+      $("outras_pj").value         = String(custos.outrasMensais    || 0);
+      $("lblTotalCustos").textContent = fmtBRL(custos.honorariosMensais + custos.manutencaoAnual + custos.custoImplantacao + (custos.outrasMensais||0));
+      // Atualiza labels do bloco de payback (se já visível)
+      $("custo_implant_res").textContent = fmtBRL(custos.custoImplantacao);
+      $("manut_res").textContent = fmtBRL(custos.manutencaoAnual);
+    }
+    syncHiddenInputsFromState();
+
+    // ----- máscaras simples -----
+    const maskCPF = (v)=>v.replace(/\D/g,"")
+      .replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/,"$1-$2").slice(0,14);
+    const maskPhone = (v)=>v.replace(/\D/g,"").replace(/^(\d{2})(\d)/,"($1) $2").replace(/(\d{5})(\d)/,"$1-$2").slice(0,15);
+    $("cpf")?.addEventListener("input", e => e.target.value = maskCPF(e.target.value));
+    $("telefone")?.addEventListener("input", e => e.target.value = maskPhone(e.target.value));
+
+    // ----- alíquotas automáticas -----
+    function atualizarAliquotasAuto() {
+      const receita = Number($("receita").value||0);
+      const valorImovel = Number($("valor_imovel").value||0);
+      const a = derivarAliquotas({ receitaMensal: receita, valorImovel });
+
+      $("ir_pf").value = a.irPfPct.toFixed(2);
+      $("ibs_cbs").value = a.ibsPct.toFixed(2);
+      $("pj_aliq_total").value = a.pjAliqTotalPct.toFixed(2);
+    }
+    ["receita","valor_imovel"].forEach(id => $(id)?.addEventListener("input", atualizarAliquotasAuto));
+    $("toggleManual").addEventListener("change", (e)=>{
+      const enabled = e.target.checked;
+      ["ir_pf","ibs_cbs","pj_aliq_total"].forEach(id => { $(id).disabled = !enabled; });
+      if(!enabled) atualizarAliquotasAuto();
+    });
+
+    // ----- modal custos -----
+    function abrirModal(){ $("custosModal").classList.remove("hidden"); $("custosModal").classList.add("flex"); preencherModalComEstado(); atualizarTotalModal(); }
+    function fecharModal(){ $("custosModal").classList.add("hidden"); $("custosModal").classList.remove("flex"); }
+    $("btnCustos").addEventListener("click", abrirModal);
+    $("closeModal").addEventListener("click", fecharModal);
+    $("custosModal").addEventListener("click",(e)=>{ if(e.target.id==="custosModal") fecharModal(); });
+
+    function preencherModalComEstado(){
+      $("c_honorarios").value = custos.honorariosMensais;
+      $("c_manutencao").value = custos.manutencaoAnual;
+      $("c_implantacao").value = custos.custoImplantacao;
+      $("c_outras").value = custos.outrasMensais || 0;
+    }
+    function lerModalParaEstado(){
+      custos.honorariosMensais = Number($("c_honorarios").value||0);
+      custos.manutencaoAnual  = Number($("c_manutencao").value||0);
+      custos.custoImplantacao = Number($("c_implantacao").value||0);
+      custos.outrasMensais    = Number($("c_outras").value||0);
+    }
+    function atualizarTotalModal(){
+      const total = Number($("c_honorarios").value||0) + Number($("c_manutencao").value||0) + Number($("c_implantacao").value||0) + Number($("c_outras").value||0);
+      $("c_total").textContent = fmtBRL(total);
+    }
+    ["c_honorarios","c_manutencao","c_implantacao","c_outras"].forEach(id=>{
+      document.addEventListener("input",(e)=>{ if(e.target.id===id) atualizarTotalModal(); });
+    });
+    $("salvarCustos").addEventListener("click", ()=>{
+      lerModalParaEstado();
+      localStorage.setItem("custosHolding", JSON.stringify(custos));
+      syncHiddenInputsFromState();
+      fecharModal();
+    });
+
+    // ----- cadastro (segue para etapa 2 mesmo com erro no Supabase) -----
+    $("cadastroForm").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      $("statusCadastro").textContent = "Validando…";
+
+      const nome = $("nome").value.trim();
+      const telefone = $("telefone").value.trim();
+      const cpf = $("cpf").value.trim();
+      const endereco = $("endereco").value.trim();
+      const email = $("email").value.trim();
+      const aceite = $("aceite").checked;
+      const modalidade = (document.querySelector('input[name="modalidade"]:checked')?.value) || "PF";
+
+      if(!aceite){ $("statusCadastro").textContent = "É necessário aceitar os termos para continuar."; return; }
+
+      try{
+        const { data:exists, error:errExists } = await supabase
+          .from("cadastros").select("id").or(`cpf.eq.${cpf},email.eq.${email}`).limit(1);
+        if (errExists) throw errExists;
+
+        if (exists && exists.length){
+          localStorage.setItem("cadastroId", exists[0].id);
+          $("statusCadastro").textContent = "Cadastro localizado. Prosseguindo…";
+        } else {
+          const { data, error } = await supabase
+            .from("cadastros")
+            .insert({ nome, telefone, cpf, endereco, email, aceitou_termo:aceite, modalidade, data_cadastro:new Date().toISOString() })
+            .select("id").single();
+          if (error) throw error;
+          localStorage.setItem("cadastroId", data.id);
+          $("statusCadastro").textContent = "Cadastro salvo com sucesso!";
+        }
+      }catch(err){
+        console.error("Falha no Supabase (cadastro):", err);
+        $("statusCadastro").textContent = "Não foi possível salvar agora. Você pode simular mesmo assim.";
+      }
+
+      const card = $("cadastroCard");
+      card.classList.add("fade-out");
+      setTimeout(()=>{ card.classList.add("hidden"); $("calcCard").classList.remove("hidden"); $("receita").focus(); atualizarAliquotasAuto(); },450);
+    });
+
+    // ----- cálculo -----
+    $("btnCalcular").addEventListener("click", async ()=>{
+      $("statusCalc").textContent = "Calculando…";
+
+      const manual = $("toggleManual").checked;
+      const receitaMensal = Number($("receita").value || 0);
+      const valorImovel   = Number($("valor_imovel").value || 0);
+      let irPfPct, ibsPct, pjAliqTotalPct;
+
+      if (manual){
+        irPfPct       = Number($("ir_pf").value || 0);
+        ibsPct        = Number($("ibs_cbs").value || 0);
+        pjAliqTotalPct= Number($("pj_aliq_total").value || 0);
+      } else {
+        const a = derivarAliquotas({ receitaMensal, valorImovel });
+        irPfPct=a.irPfPct; ibsPct=a.ibsPct; pjAliqTotalPct=a.pjAliqTotalPct;
+      }
+
+      const params = {
+        receitaMensal, valorImovel,
+        descontosPct: Number($("descontos_pct").value || 0),
+        honorariosMensais: custos.honorariosMensais,
+        manutencaoAnual :  custos.manutencaoAnual,
+        custoImplantacao:  custos.custoImplantacao,
+        outrasDespesasPJ:  custos.outrasMensais,
+        irPfPct, ibsPct, pjAliqTotalPct
+      };
+
+      try{
+        const res = calcularViabilidade(params);
+
+        $("resultadoBox").classList.remove("hidden");
+        $("pf_liquido").textContent      = fmtBRL(res.pf.liquidoMensal);
+        $("pj_liquido").textContent      = fmtBRL(res.pj.liquidoMensal);
+        $("economia_mensal").textContent = fmtBRL(res.economiaMensal);
+
+        $("score_bar").style.width = `${res.score}%`;
+        $("score_label").textContent = `${res.score}%`;
+        $("recomendacao").textContent = res.recomendacao;
+
+        $("payback").textContent = res.paybackMeses === Infinity ? "Sem retorno (inviável)" : `${res.paybackMeses.toFixed(1)} meses`;
+        $("custo_implant_res").textContent = fmtBRL(custos.custoImplantacao);
+        $("manut_res").textContent = fmtBRL(custos.manutencaoAnual);
+        $("eco_anual").textContent = fmtBRL(res.economiaMensal * 12);
+
+        $("statusCalc").textContent = "";
+
+        // persistência da simulação (best-effort)
+        try{
+          const cadastroId = localStorage.getItem("cadastroId") || null;
+          const { error: simErr } = await supabase.from("simulacoes").insert({
+            cadastro_id: cadastroId, parametros: params, resultado: res, data_simulacao: new Date().toISOString()
+          });
+          if (simErr) console.warn("Falha ao salvar simulação:", simErr);
+        }catch(saveErr){ console.warn("Não foi possível salvar a simulação:", saveErr); }
+      }catch(err){
+        console.error(err);
+        $("statusCalc").textContent = "Erro no cálculo. Revise os campos.";
+      }
+    });
+  </script>
+</body>
+</html>

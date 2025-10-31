@@ -9,20 +9,29 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root { --gold:#D4AF37; --gold-soft:rgba(212,175,55,.25) }
+    :root {
+      --gold:#D4AF37;
+      --gold-soft:rgba(212,175,55,.25);
+      --deep-green:#0F1E17; /* verde escuro da arte */
+    }
     html, body { height: 100% }
     body{
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: radial-gradient(1200px 700px at 70% -20%, rgba(212,175,55,.12), transparent 60%),
-                  radial-gradient(900px 600px at 10% 110%, rgba(212,175,55,.10), transparent 60%), #0c0c0f;
+      background: var(--deep-green);
       color:#f4f4f5; min-height:100vh;
+      /* leve vinheta pra profundidade sem mudar o tom */
+      background-image:
+        radial-gradient(900px 600px at 10% 110%, rgba(0,0,0,.18), transparent 60%),
+        radial-gradient(1200px 700px at 80% -20%, rgba(0,0,0,.16), transparent 60%),
+        linear-gradient(0deg, rgba(0,0,0,.04), rgba(0,0,0,.04));
+      background-blend-mode: multiply, multiply, normal;
     }
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
       border:1px solid rgba(255,255,255,.08);
       backdrop-filter: blur(12px);
       border-radius:18px;
-      box-shadow:0 10px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06);
+      box-shadow:0 10px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
     }
     .divider{height:1px;width:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent)}
     .btn{
@@ -45,22 +54,21 @@
     .bar-inner{height:100%;width:0%;background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e);transition:width .6s cubic-bezier(.22,.92,.19,1)}
     .subtle{ color:#d6d6d7 } .link{ color:var(--gold); text-decoration:underline; text-underline-offset:2px }
     .pill{ border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:.25rem .6rem; font-size:.76rem; opacity:.9}
-    /* Modal */
     .modal-bg{ background: rgba(0,0,0,.55) }
   </style>
 </head>
 <body>
   <main class="max-w-7xl mx-auto px-5 py-8 md:py-12">
     <div class="grid md:grid-cols-2 gap-8 items-stretch">
-      <!-- ESQUERDA: IMAGEM -->
-      <section class="card p-8 md:p-12 flex items-center justify-center min-h-[640px]">
+      <!-- ESQUERDA: LOGO (sem card/modal, apenas a imagem) -->
+      <section class="p-0 md:p-0 flex items-center justify-center min-h-[640px]">
         <img src="./recursos/auvp.png" alt="AUVP Wealth"
-             class="max-w-full max-h-[560px] w-auto h-auto object-contain rounded-[14px] shadow-2xl" />
+             class="max-w-full max-h-[560px] w-auto h-auto object-contain rounded-[14px] shadow-xl" />
       </section>
 
       <!-- DIREITA: CONTEÚDO -->
       <div class="flex flex-col justify-center min-h-[640px]">
-        <!-- CADASTRO -->
+        <!-- CADASTRO (único) -->
         <section id="cadastroCard" class="card p-6 md:p-8">
           <div class="flex items-center justify-between mb-6">
             <div>
@@ -90,16 +98,9 @@
               <label class="block mb-2 text-sm text-zinc-300">Endereço</label>
               <input id="endereco" class="field w-full" type="text" placeholder="Rua, número, bairro, cidade/UF" required>
             </div>
-            <div>
+            <div class="md:col-span-2">
               <label class="block mb-2 text-sm text-zinc-300">E-mail</label>
               <input id="email" class="field w-full" type="email" placeholder="seu@email.com" required>
-            </div>
-            <div>
-              <label class="block mb-2 text-sm text-zinc-300">Modalidade</label>
-              <div class="flex items-center gap-4 h-[48px]">
-                <label class="flex items-center gap-2"><input type="radio" name="modalidade" value="PF" checked><span>Pessoa Física</span></label>
-                <label class="flex items-center gap-2"><input type="radio" name="modalidade" value="PJ"><span>Pessoa Jurídica (Holding)</span></label>
-              </div>
             </div>
 
             <div class="md:col-span-2 -mt-2">
@@ -129,7 +130,7 @@
           <div class="flex items-center justify-between mb-6">
             <div>
               <h2 class="text-2xl md:text-3xl font-bold">Simulação de Viabilidade</h2>
-              <p class="subtle mt-1">As alíquotas da Reforma 2025 são aplicadas automaticamente por faixa de renda e valor do imóvel.</p>
+              <p class="subtle mt-1">Regras da planilha (PF × PJ). A barra indica a viabilidade.</p>
             </div>
             <div class="hidden md:block text-right">
               <div class="text-xs uppercase tracking-widest text-zinc-400">Etapa 2 de 2</div>
@@ -138,7 +139,7 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Base para cálculo automático -->
+            <!-- Base para cálculo -->
             <div class="md:col-span-1">
               <label class="block mb-2 text-sm text-zinc-300">Receita mensal de aluguéis (R$)</label>
               <input id="receita" class="field w-full" type="number" inputmode="decimal" placeholder="Ex.: 12000" min="0">
@@ -147,14 +148,18 @@
               <label class="block mb-2 text-sm text-zinc-300">Valor estimado do imóvel (R$)</label>
               <input id="valor_imovel" class="field w-full" type="number" inputmode="decimal" placeholder="Ex.: 800000" min="0">
             </div>
+            <div>
+              <label class="block mb-2 text-sm text-zinc-300">Qtd. de imóveis</label>
+              <input id="qtd_imoveis" class="field w-full" type="number" inputmode="numeric" min="1" value="1">
+            </div>
 
             <!-- Alíquotas (auto) -->
             <div class="md:col-span-3">
               <div class="flex items-center gap-3">
-                <span class="pill">Regras automáticas da Reforma 2025</span>
+                <span class="pill">Regras automáticas (planilha)</span>
                 <label class="flex items-center gap-2 text-sm text-zinc-300">
                   <input id="toggleManual" type="checkbox">
-                  <span>Editar alíquotas manualmente</span>
+                  <span>Editar alíquotas manualmente (visual)</span>
                 </label>
               </div>
             </div>
@@ -172,28 +177,29 @@
               <input id="pj_aliq_total" class="field w-full" type="number" step="0.01" placeholder="Auto" disabled>
             </div>
 
-            <!-- Descontos (visível); custos (OCULTOS) -->
+            <!-- Descontos (opcional) -->
             <div>
               <label class="block mb-2 text-sm text-zinc-300">Descontos / despesas (%)</label>
               <input id="descontos_pct" class="field w-full" type="number" inputmode="decimal" placeholder="Ex.: 10" min="0" max="90" value="0">
             </div>
 
-            <!-- Custos ocultos: guardam valores finais, alimentados pelo modal -->
-            <input id="honorarios"        type="hidden" value="12000" />
-            <input id="manutencao_anual"  type="hidden" value="3000" />
-            <input id="custo_implantacao" type="hidden" value="3000" />
+            <!-- Inputs ocultos (compatibilidade) -->
+            <input id="honorarios"        type="hidden" value="0" />
+            <input id="manutencao_anual"  type="hidden" value="0" />
+            <input id="custo_implantacao" type="hidden" value="0" />
             <input id="outras_pj"         type="hidden" value="0" />
           </div>
 
           <div class="divider my-6"></div>
 
-          <!-- BOTÃO DE CUSTOS + CÁLCULO -->
+          <!-- BOTÕES -->
           <div class="flex items-center gap-3 flex-wrap">
-            <button id="btnCustos" type="button" class="btn flex items-center gap-2">
+            <!-- Botão de custos oculto -->
+            <button id="btnCustos" type="button" class="btn flex items-center gap-2 hidden">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path d="M12 1v22M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
               </svg>
-              Custos ( <span id="lblTotalCustos">R$ 15.000,00</span> )
+              Custos (<span id="lblTotalCustos">—</span>)
             </button>
 
             <button id="btnCalcular" class="btn flex items-center gap-2">
@@ -224,8 +230,9 @@
                 <div class="text-sm text-zinc-400">Payback</div>
                 <div id="payback" class="text-2xl font-bold mt-1">—</div>
                 <ul class="mt-3 text-sm list-disc pl-5 leading-relaxed">
-                  <li>Custo de implantação: <span id="custo_implant_res" class="text-zinc-200">R$ 0,00</span></li>
-                  <li>Manutenção anual: <span id="manut_res" class="text-zinc-200">R$ 0,00</span></li>
+                  <li>ITBI (3%): <span id="itbi_res" class="text-zinc-200">R$ 0,00</span></li>
+                  <li>Honorários (implantação): <span id="honor_implant_res" class="text-zinc-200">R$ 25.000,00</span></li>
+                  <li>Custo de implantação total: <span id="custo_implant_res" class="text-zinc-200">R$ 0,00</span></li>
                   <li>Economia anual: <span id="eco_anual" class="text-zinc-200">R$ 0,00</span></li>
                 </ul>
               </div>
@@ -241,7 +248,7 @@
     </div>
   </main>
 
-  <!-- MODAL DE CUSTOS -->
+  <!-- MODAL DE CUSTOS (mantido, mas oculto e não usado) -->
   <div id="custosModal" class="fixed inset-0 hidden items-center justify-center modal-bg z-50">
     <div class="card w-[min(720px,95vw)] p-6 md:p-8 relative">
       <button id="closeModal" class="absolute right-4 top-4 text-zinc-300 hover:text-white">
@@ -250,20 +257,20 @@
         </svg>
       </button>
       <h3 class="text-xl md:text-2xl font-bold mb-1">Detalhamento de Custos</h3>
-      <p class="subtle text-sm mb-6">Edite se necessário. Usaremos o <b>total</b> no cálculo.</p>
+      <p class="subtle text-sm mb-6">Mantido apenas por compatibilidade visual.</p>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block mb-2 text-sm text-zinc-300">Honorários contábeis/jurídicos (R$/mês)</label>
-          <input id="c_honorarios" class="field w-full" type="number" min="0" value="12000">
+          <input id="c_honorarios" class="field w-full" type="number" min="0" value="0">
         </div>
         <div>
           <label class="block mb-2 text-sm text-zinc-300">Custo de manutenção anual (R$)</label>
-          <input id="c_manutencao" class="field w-full" type="number" min="0" value="3000">
+          <input id="c_manutencao" class="field w-full" type="number" min="0" value="0">
         </div>
         <div>
           <label class="block mb-2 text-sm text-zinc-300">Custo de implantação (R$)</label>
-          <input id="c_implantacao" class="field w-full" type="number" min="0" value="3000">
+          <input id="c_implantacao" class="field w-full" type="number" min="0" value="0">
         </div>
         <div>
           <label class="block mb-2 text-sm text-zinc-300">Outras despesas mensais PJ (R$)</label>
@@ -274,7 +281,7 @@
       <div class="divider my-6"></div>
 
       <div class="flex items-center justify-between">
-        <div class="text-lg">Total de custos: <span id="c_total" class="font-bold">R$ 15.000,00</span></div>
+        <div class="text-lg">Total de custos: <span id="c_total" class="font-bold">—</span></div>
         <div class="flex items-center gap-3">
           <button id="salvarCustos" class="btn">Salvar custos</button>
         </div>
@@ -287,7 +294,7 @@
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
     import { calcularViabilidade, derivarAliquotas } from "./parametros/calculadora.js";
 
-    // ⛳ Substitua pela sua anon key real
+    // ⛳ Substitua se necessário
     const SUPABASE_URL = "https://zkslobheylsaifqcoiva.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inprc2xvYmhleWxzYWlmcWNvaXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1ODA0ODAsImV4cCI6MjA3NzE1NjQ4MH0.rENidnRveawa23yvCfXOtUv9WkvBW0bLws-o1UzSGFs";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -295,28 +302,7 @@
     const $  = (id)=>document.getElementById(id);
     const fmtBRL = (v)=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 
-    // ----- estado de custos (ocultos no formulário) -----
-    const DEFAULT_COSTS = {
-      honorariosMensais: 12000,
-      manutencaoAnual : 3000,
-      custoImplantacao: 3000,
-      outrasMensais   : 0
-    };
-    let custos = JSON.parse(localStorage.getItem("custosHolding")||"null") || { ...DEFAULT_COSTS };
-
-    function syncHiddenInputsFromState(){
-      $("honorarios").value        = String(custos.honorariosMensais || 0);
-      $("manutencao_anual").value  = String(custos.manutencaoAnual  || 0);
-      $("custo_implantacao").value = String(custos.custoImplantacao || 0);
-      $("outras_pj").value         = String(custos.outrasMensais    || 0);
-      $("lblTotalCustos").textContent = fmtBRL(custos.honorariosMensais + custos.manutencaoAnual + custos.custoImplantacao + (custos.outrasMensais||0));
-      // Atualiza labels do bloco de payback (se já visível)
-      $("custo_implant_res").textContent = fmtBRL(custos.custoImplantacao);
-      $("manut_res").textContent = fmtBRL(custos.manutencaoAnual);
-    }
-    syncHiddenInputsFromState();
-
-    // ----- máscaras simples -----
+    // máscaras
     const maskCPF = (v)=>v.replace(/\D/g,"")
       .replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2")
       .replace(/(\d{3})(\d{1,2})$/,"$1-$2").slice(0,14);
@@ -324,42 +310,30 @@
     $("cpf")?.addEventListener("input", e => e.target.value = maskCPF(e.target.value));
     $("telefone")?.addEventListener("input", e => e.target.value = maskPhone(e.target.value));
 
-    // ----- alíquotas automáticas -----
+    // alíquotas automáticas (exibição)
     function atualizarAliquotasAuto() {
       const receita = Number($("receita").value||0);
       const valorImovel = Number($("valor_imovel").value||0);
-      const a = derivarAliquotas({ receitaMensal: receita, valorImovel });
+      const numeroImoveis = Math.max(1, Number($("qtd_imoveis").value || 1));
 
+      const a = derivarAliquotas({ receitaMensal: receita, valorImovel, numeroImoveis });
       $("ir_pf").value = a.irPfPct.toFixed(2);
       $("ibs_cbs").value = a.ibsPct.toFixed(2);
       $("pj_aliq_total").value = a.pjAliqTotalPct.toFixed(2);
     }
-    ["receita","valor_imovel"].forEach(id => $(id)?.addEventListener("input", atualizarAliquotasAuto));
+    ["receita","valor_imovel","qtd_imoveis"].forEach(id => $(id)?.addEventListener("input", atualizarAliquotasAuto));
     $("toggleManual").addEventListener("change", (e)=>{
       const enabled = e.target.checked;
       ["ir_pf","ibs_cbs","pj_aliq_total"].forEach(id => { $(id).disabled = !enabled; });
       if(!enabled) atualizarAliquotasAuto();
     });
 
-    // ----- modal custos -----
-    function abrirModal(){ $("custosModal").classList.remove("hidden"); $("custosModal").classList.add("flex"); preencherModalComEstado(); atualizarTotalModal(); }
+    // modal custos (não usado)
+    function abrirModal(){ $("custosModal").classList.remove("hidden"); $("custosModal").classList.add("flex"); atualizarTotalModal(); }
     function fecharModal(){ $("custosModal").classList.add("hidden"); $("custosModal").classList.remove("flex"); }
     $("btnCustos").addEventListener("click", abrirModal);
     $("closeModal").addEventListener("click", fecharModal);
     $("custosModal").addEventListener("click",(e)=>{ if(e.target.id==="custosModal") fecharModal(); });
-
-    function preencherModalComEstado(){
-      $("c_honorarios").value = custos.honorariosMensais;
-      $("c_manutencao").value = custos.manutencaoAnual;
-      $("c_implantacao").value = custos.custoImplantacao;
-      $("c_outras").value = custos.outrasMensais || 0;
-    }
-    function lerModalParaEstado(){
-      custos.honorariosMensais = Number($("c_honorarios").value||0);
-      custos.manutencaoAnual  = Number($("c_manutencao").value||0);
-      custos.custoImplantacao = Number($("c_implantacao").value||0);
-      custos.outrasMensais    = Number($("c_outras").value||0);
-    }
     function atualizarTotalModal(){
       const total = Number($("c_honorarios").value||0) + Number($("c_manutencao").value||0) + Number($("c_implantacao").value||0) + Number($("c_outras").value||0);
       $("c_total").textContent = fmtBRL(total);
@@ -367,14 +341,9 @@
     ["c_honorarios","c_manutencao","c_implantacao","c_outras"].forEach(id=>{
       document.addEventListener("input",(e)=>{ if(e.target.id===id) atualizarTotalModal(); });
     });
-    $("salvarCustos").addEventListener("click", ()=>{
-      lerModalParaEstado();
-      localStorage.setItem("custosHolding", JSON.stringify(custos));
-      syncHiddenInputsFromState();
-      fecharModal();
-    });
+    $("salvarCustos").addEventListener("click", fecharModal);
 
-    // ----- cadastro (segue para etapa 2 mesmo com erro no Supabase) -----
+    // cadastro
     $("cadastroForm").addEventListener("submit", async (e)=>{
       e.preventDefault();
       $("statusCadastro").textContent = "Validando…";
@@ -385,7 +354,6 @@
       const endereco = $("endereco").value.trim();
       const email = $("email").value.trim();
       const aceite = $("aceite").checked;
-      const modalidade = (document.querySelector('input[name="modalidade"]:checked')?.value) || "PF";
 
       if(!aceite){ $("statusCadastro").textContent = "É necessário aceitar os termos para continuar."; return; }
 
@@ -400,7 +368,7 @@
         } else {
           const { data, error } = await supabase
             .from("cadastros")
-            .insert({ nome, telefone, cpf, endereco, email, aceitou_termo:aceite, modalidade, data_cadastro:new Date().toISOString() })
+            .insert({ nome, telefone, cpf, endereco, email, aceitou_termo:aceite, data_cadastro:new Date().toISOString() })
             .select("id").single();
           if (error) throw error;
           localStorage.setItem("cadastroId", data.id);
@@ -416,13 +384,14 @@
       setTimeout(()=>{ card.classList.add("hidden"); $("calcCard").classList.remove("hidden"); $("receita").focus(); atualizarAliquotasAuto(); },450);
     });
 
-    // ----- cálculo -----
+    // cálculo
     $("btnCalcular").addEventListener("click", async ()=>{
       $("statusCalc").textContent = "Calculando…";
 
       const manual = $("toggleManual").checked;
       const receitaMensal = Number($("receita").value || 0);
       const valorImovel   = Number($("valor_imovel").value || 0);
+      const numeroImoveis = Math.max(1, Number($("qtd_imoveis").value || 1));
       let irPfPct, ibsPct, pjAliqTotalPct;
 
       if (manual){
@@ -430,17 +399,15 @@
         ibsPct        = Number($("ibs_cbs").value || 0);
         pjAliqTotalPct= Number($("pj_aliq_total").value || 0);
       } else {
-        const a = derivarAliquotas({ receitaMensal, valorImovel });
+        const a = derivarAliquotas({ receitaMensal, valorImovel, numeroImoveis });
         irPfPct=a.irPfPct; ibsPct=a.ibsPct; pjAliqTotalPct=a.pjAliqTotalPct;
       }
 
       const params = {
-        receitaMensal, valorImovel,
+        receitaMensal,
+        valorImovel,
+        numeroImoveis,
         descontosPct: Number($("descontos_pct").value || 0),
-        honorariosMensais: custos.honorariosMensais,
-        manutencaoAnual :  custos.manutencaoAnual,
-        custoImplantacao:  custos.custoImplantacao,
-        outrasDespesasPJ:  custos.outrasMensais,
         irPfPct, ibsPct, pjAliqTotalPct
       };
 
@@ -457,13 +424,14 @@
         $("recomendacao").textContent = res.recomendacao;
 
         $("payback").textContent = res.paybackMeses === Infinity ? "Sem retorno (inviável)" : `${res.paybackMeses.toFixed(1)} meses`;
-        $("custo_implant_res").textContent = fmtBRL(custos.custoImplantacao);
-        $("manut_res").textContent = fmtBRL(custos.manutencaoAnual);
+        $("itbi_res").textContent = fmtBRL(res.custos.itbi);
+        $("honor_implant_res").textContent = fmtBRL(res.custos.honorarios);
+        $("custo_implant_res").textContent = fmtBRL(res.custos.implantacao);
         $("eco_anual").textContent = fmtBRL(res.economiaMensal * 12);
 
         $("statusCalc").textContent = "";
 
-        // persistência da simulação (best-effort)
+        // best-effort: salvar simulação
         try{
           const cadastroId = localStorage.getItem("cadastroId") || null;
           const { error: simErr } = await supabase.from("simulacoes").insert({

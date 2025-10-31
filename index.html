@@ -248,7 +248,7 @@
     </div>
   </main>
 
-  <!-- MODAL DE CUSTOS (mantido, mas oculto e não usado) -->
+  <!-- MODAL DE CUSTOS  -->
   <div id="custosModal" class="fixed inset-0 hidden items-center justify-center modal-bg z-50">
     <div class="card w-[min(720px,95vw)] p-6 md:p-8 relative">
       <button id="closeModal" class="absolute right-4 top-4 text-zinc-300 hover:text-white">
@@ -289,7 +289,7 @@
     </div>
   </div>
 
-  <!-- SUPABASE + LÓGICA -->
+  <!-- SUPABASE (sugerir outro banco de dados tambem rola + LÓGICA -->
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
     import { calcularViabilidade, derivarAliquotas } from "./parametros/calculadora.js";
@@ -310,7 +310,7 @@
     $("cpf")?.addEventListener("input", e => e.target.value = maskCPF(e.target.value));
     $("telefone")?.addEventListener("input", e => e.target.value = maskPhone(e.target.value));
 
-    // alíquotas automáticas (exibição)
+    // alíquotas automáticas (exibição) (verificar melhorias)
     function atualizarAliquotasAuto() {
       const receita = Number($("receita").value||0);
       const valorImovel = Number($("valor_imovel").value||0);
@@ -431,7 +431,7 @@
 
         $("statusCalc").textContent = "";
 
-        // best-effort: salvar simulação
+        // best-effort: salvar simulação 
         try{
           const cadastroId = localStorage.getItem("cadastroId") || null;
           const { error: simErr } = await supabase.from("simulacoes").insert({

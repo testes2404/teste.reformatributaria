@@ -1,82 +1,188 @@
 // parametros/calculadora.js
-// Regras simplificadas com base em faixas típicas da Reforma 2025.
-// Ajuste as faixas/percentuais conforme a versão final da lei.
+// Regras da planilha (PF x PJ pós-reforma) + payback com ITBI (3%) + honorários R$ 25.000
 
-export function derivarAliquotas({ receitaMensal = 0, valorImovel = 0 }) {
-  // ---- IR PF progressivo (faixas ilustrativas) ----
-  let irPfPct = 0;
-  const r = receitaMensal;
-  if      (r <= 2112)     irPfPct = 0;
-  else if (r <= 2826.65)  irPfPct = 7.5;
-  else if (r <= 3751.05)  irPfPct = 15;
-  else if (r <= 4664.68)  irPfPct = 22.5;
-  else                    irPfPct = 27.5;
+export function derivarAliquotas({ receitaMensal = 0, valorImovel = 0, numeroImoveis = 1 }) {
+  const R = Number(receitaMensal || 0);
+  const imoveis = Math.max(1, Number(numeroImoveis || 1));
 
-  // ---- IBS/CBS (faixa por valor do imóvel; placeholders) ----
-  let ibsPct = 0;
-  if      (valorImovel <= 300000)  ibsPct = 0.50;    // locação residencial popular – alíquota reduzida (exemplo)
-  else if (valorImovel <= 700000)  ibsPct = 1.00;
-  else if (valorImovel <= 1500000) ibsPct = 2.00;
-  else                             ibsPct = 3.00;
+  // PF
+  const deducaoPF = Math.min(R * 0.20, 607.20);
+  const basePF = Math.max(0, R - deducaoPF);
+  const irpf = calcularIRPF(basePF);
 
-  // ---- PJ (IRPJ+CSLL+ISS/IBS/CBS efetivo médio para holding de locação; placeholder) ----
-  let pjAliqTotalPct = 11.33; // Simples/Presumido médio; ajuste conforme cenários.
+  // IBS/CBS PF com redutor social
+  const redutor = redutorSocial(R, imoveis);
+  const ibsPf = redutor.eligivel ? Math.max(0, (R - redutor.valor) * 0.084) : 0;
 
-  return { irPfPct, ibsPct, pjAliqTotalPct };
+  // PJ
+  const lucroPresumido = R * 0.32;
+  const irpj = (lucroPresumido * 0.15) + adicionalIRPJ(lucroPresumido);
+  const csll = 0.0288 * R;
+  const ibsBase = redutor.eligivel ? Math.max(0, (R - redutor.valor) * 0.084) : 0;
+  const ibsPj = Math.max(0, ibsBase - 425.04); // crédito fixo
+
+  const totalPJ = irpj + csll + ibsPj;
+
+  // Percentuais efetivos visuais
+  const irPfPctEff = R > 0 ? (irpf / R) * 100 : 0;
+  const ibsPctEff  = R > 0 ? ((redutor.eligivel ? (R - redutor.valor) * 0.084 : 0) / R) * 100 : 0;
+  const pjAliqEff  = R > 0 ? (totalPJ / R) * 100 : 0;
+
+  return {
+    irPfPct: round2(irPfPctEff),
+    ibsPct: round2(ibsPctEff),
+    pjAliqTotalPct: round2(pjAliqEff),
+  };
 }
 
 export function calcularViabilidade(params) {
   const {
     receitaMensal = 0,
-    descontosPct = 0,
-    irPfPct = 0,
-    ibsPct = 0,
-    pjAliqTotalPct = 0,
-    honorariosMensais = 0,
-    manutencaoAnual = 0,
-    custoImplantacao = 0,
-    outrasDespesasPJ = 0
+    valorImovel = 0,
+    numeroImoveis = 1,
+    descontosPct = 0, // caso use
   } = params || {};
 
-  const receitaLiquidaBase = receitaMensal * (1 - (descontosPct/100));
+  let R = Number(receitaMensal || 0);
+  const imoveis = Math.max(1, Number(numeroImoveis || 1));
+  const V = Math.max(0, Number(valorImovel || 0));
+  const desc = Math.max(0, Number(descontosPct || 0));
 
-  // PF: IR sobre a receita líquida (aprox.; ajuste conforme regra final de deduções)
-  const irPfValor   = receitaLiquidaBase * (irPfPct/100);
-  const pfLiquido   = Math.max(0, receitaLiquidaBase - irPfValor);
+  // aplica descontos percentuais (ex.: vacância/condomínio) se informados
+  if (desc > 0 && desc < 90) {
+    R = R * (1 - desc/100);
+  }
 
-  // PJ: tributos efetivos + custos fixos mensais
-  const tribPJ      = receitaLiquidaBase * (pjAliqTotalPct/100);
-  const ibsValor    = receitaLiquidaBase * (ibsPct/100);
-  const pjLiquido   = Math.max(0, receitaLiquidaBase - tribPJ - ibsValor - honorariosMensais - outrasDespesasPJ);
+  // ===== PF =====
+  const deducaoPF = Math.min(R * 0.20, 607.20);
+  const basePF = Math.max(0, R - deducaoPF);
+  const irpf = calcularIRPF(basePF);
 
-  const economiaMensal = Math.max(0, pjLiquido - pfLiquido); // se PJ > PF, economia é positiva
+  const redutor = redutorSocial(R, imoveis);
+  const ibsPf = redutor.eligivel ? Math.max(0, (R - redutor.valor) * 0.084) : 0;
 
-  // Payback: custo de implantação / economia mensal (desconsidera manutenção anual aqui;
-  // a manutenção já está sendo abatida no fluxo mensal via honorários/ outras, e a anual pode ser considerada
-  // no primeiro ano como (manutencaoAnual/12) se desejar. Mantemos simples:
-  const ecoMensalAposManut = Math.max(0, economiaMensal - (manutencaoAnual/12));
-  const paybackMeses = ecoMensalAposManut > 0 ? (custoImplantacao / ecoMensalAposManut) : Infinity;
+  const totalPF = irpf + ibsPf;
+  const pfLiquido = Math.max(0, R - totalPF);
 
-  // Score simples de viabilidade
-  let score = 0;
-  if (ecoMensalAposManut <= 0) score = 0;
-  else if (paybackMeses <= 12) score = 90;
-  else if (paybackMeses <= 24) score = 70;
-  else if (paybackMeses <= 36) score = 50;
-  else score = 25;
+  // ===== PJ =====
+  const lucroPresumido = R * 0.32;
+  const irpj = (lucroPresumido * 0.15) + adicionalIRPJ(lucroPresumido); // +10% sobre excedente de 20k no LP
+  const csll = 0.0288 * R;
 
-  const recomendacao =
-    score >= 80 ? "Alta viabilidade: considere avançar para estruturação da holding."
-  : score >= 60 ? "Viável com bons indícios: refine premissas e avalie timing."
-  : score >= 40 ? "Viabilidade moderada: ajuste custos/tributos e reavalie."
-                : "Inviável no cenário atual: reveja receita, custos ou regime tributário.";
+  const ibsBase = redutor.eligivel ? Math.max(0, (R - redutor.valor) * 0.084) : 0;
+  const ibsPj = Math.max(0, ibsBase - 425.04);
+
+  const totalPJ = irpj + csll + ibsPj;
+  const pjLiquido = Math.max(0, R - totalPJ);
+
+  // ===== Payback: ITBI + honorários fixos =====
+  const itbi = V * 0.03;
+  const honorariosImplant = 25000;
+  const custoImplantacao = itbi + honorariosImplant;
+
+  const economiaMensal = Math.max(0, pjLiquido - pfLiquido);
+  const paybackMeses = economiaMensal > 0 ? (custoImplantacao / economiaMensal) : Infinity;
+
+  // ===== Score =====
+  const score = calcularScore(economiaMensal, paybackMeses, R);
+  const recomendacao = gerarMensagemRecomendacao(economiaMensal, paybackMeses);
 
   return {
-    pf: { liquidoMensal: pfLiquido, irValor: irPfValor },
-    pj: { liquidoMensal: pjLiquido, tributos: tribPJ + ibsValor, custosFixos: honorariosMensais + outrasDespesasPJ },
-    economiaMensal,
+    pf: {
+      liquidoMensal: round2(pfLiquido),
+      impostos: round2(totalPF),
+      irpf: round2(irpf),
+      ibs: round2(ibsPf),
+    },
+    pj: {
+      liquidoMensal: round2(pjLiquido),
+      impostos: round2(totalPJ),
+      irpj: round2(irpj),
+      csll: round2(csll),
+      ibs: round2(ibsPj),
+    },
+    economiaMensal: round2(economiaMensal),
+    score,
+    recomendacao,
     paybackMeses,
-    score: Math.round(score),
-    recomendacao
+    custos: {
+      implantacao: round2(custoImplantacao),
+      itbi: round2(itbi),
+      honorarios: honorariosImplant,
+      redutorSocial: {
+        elegivel: redutor.eligivel,
+        valor: redutor.valor,
+      },
+    },
   };
+}
+
+// ---------- Helpers ----------
+
+function adicionalIRPJ(lucroPresumidoMensal) {
+  // adicional de 10% sobre o que excede 20.000 de lucro presumido mensal
+  if (lucroPresumidoMensal <= 20000) return 0;
+  return (lucroPresumidoMensal - 20000) * 0.10;
+}
+
+function redutorSocial(receitaMensal, numeroImoveis) {
+  const Rm = Number(receitaMensal || 0);
+  const anual = Rm * 12;
+  // Elegível se (imóveis > 3 && anual > 240k) OU (anual > 280k)
+  const elegivel =
+    ((numeroImoveis > 3) && (anual > 240000)) ||
+    (anual > 280000);
+
+  const valor = elegivel ? (numeroImoveis * 600) : 0;
+  return { elegivel, valor };
+}
+
+function calcularIRPF(base) {
+  // Tabela 2024 (mensal) usada na planilha
+  const b = Number(base || 0);
+  if (b <= 2428.80) return 0;
+  if (b <= 2826.65) return b * 0.075 - 182.16;
+  if (b <= 3751.05) return b * 0.15 - 394.16;
+  if (b <= 4664.68) return b * 0.225 - 675.49;
+  return b * 0.275 - 908.73;
+}
+
+function calcularScore(economiaMensal, paybackMeses, receitaMensal) {
+  if (economiaMensal <= 0) return 10;
+
+  let s = 50;
+
+  // economia relativa à receita
+  const ratio = receitaMensal > 0 ? economiaMensal / receitaMensal : 0;
+  s += Math.min(40, Math.max(0, ratio * 100 * 0.6)); // até +40
+
+  // payback
+  if (paybackMeses < 6) s += 35;
+  else if (paybackMeses < 12) s += 25;
+  else if (paybackMeses < 24) s += 10;
+
+  return Math.max(5, Math.min(100, Math.round(s)));
+}
+
+function gerarMensagemRecomendacao(economiaMensal, paybackMeses) {
+  if (economiaMensal <= 0) {
+    return "No cenário informado, a holding não se paga: a economia mensal é nula ou negativa. Reavalie valores/lotes.";
+  }
+  if (paybackMeses === Infinity) {
+    return "A holding gera economia, mas não é possível estimar payback com os dados atuais.";
+  }
+  if (paybackMeses <= 6) {
+    return "Excelente viabilidade: payback curto e economia robusta. Vale avançar para a modelagem e execução.";
+  }
+  if (paybackMeses <= 12) {
+    return "Viabilidade boa: payback em até 12 meses. Recomenda-se seguir com estruturação com ajustes finos.";
+  }
+  if (paybackMeses <= 24) {
+    return "Viabilidade moderada: avalie negociar custos e otimizar aluguéis para reduzir o payback.";
+  }
+  return "Viabilidade baixa: payback longo. Reavalie custos (ITBI/honorários) e alternativas contratuais.";
+}
+
+function round2(x) {
+  return Math.round(Number(x || 0) * 100) / 100;
 }
